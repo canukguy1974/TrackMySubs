@@ -34,11 +34,19 @@ class GmailService {
   private oauth2Client: OAuth2Client;
 
   constructor() {
+    if (!process.env.GMAIL_CLIENT_ID || !process.env.GMAIL_CLIENT_SECRET) {
+      console.warn('Gmail OAuth credentials not configured. Gmail integration will not work.');
+    }
+    
     this.oauth2Client = new google.auth.OAuth2(
       process.env.GMAIL_CLIENT_ID,
       process.env.GMAIL_CLIENT_SECRET,
       `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9002'}/api/auth/gmail/callback`
     );
+  }
+
+  isConfigured(): boolean {
+    return !!(process.env.GMAIL_CLIENT_ID && process.env.GMAIL_CLIENT_SECRET);
   }
 
   setCredentials(credentials: GmailCredentials) {

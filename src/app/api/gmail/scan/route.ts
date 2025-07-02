@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { UserTierService } from '@/services/user-tiers';
+import { gmailService } from '@/services/gmail';
 import type { UserProfile } from '@/types';
 
 export async function POST(req: NextRequest) {
