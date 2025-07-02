@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mail, PlusCircle, Trash2, RefreshCw, CheckCircle, ArrowLeft } from 'lucide-react';
@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/auth-context';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,16 +40,92 @@ export default function ConnectAccountPage() {
   const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccount[]>(initialAccounts);
   const { toast } = useToast();
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const [isConnecting, setIsConnecting] = useState(false);
+
+  // Handle OAuth callback tokens
+  useEffect(() => {
+    const accessToken = searchParams.get('access_token');
+    const refreshToken = searchParams.get('refresh_token');
+    const success = searchParams.get('success');
+    
+    if (success === 'true' && accessToken && refreshToken) {
+      // Store the tokens and get user info
+      handleOAuthSuccess(accessToken, refreshToken);
+      
+      // Clean up URL
+      if (window.history.replaceState) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+  }, [searchParams]);
+
+  const handleOAuthSuccess = async (accessToken: string, refreshToken: string) => {
+    try {
+      setIsConnecting(true);
+      
+      // Get user's Gmail profile info
+      const response = await fetch('https://www.googleapis.com/oauth2/v1/userinfo', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+      
+      if (response.ok) {
+        const userInfo = await response.json();
+        
+        // Store the Gmail account connection
+        const newAccount: LinkedAccount = {
+          id: crypto.randomUUID(),
+          provider: 'gmail',
+          email: userInfo.email,
+        };
+        
+        // Add to linked accounts if not already connected
+        setLinkedAccounts(prev => {
+          const exists = prev.some(acc => acc.email === userInfo.email);
+          if (exists) {
+            toast({ 
+              title: 'Account Already Connected', 
+              description: `${userInfo.email} is already linked to your account.`,
+              variant: 'destructive'
+            });
+            return prev;
+          }
+          
+          toast({ 
+            title: 'Gmail Account Connected!', 
+            description: `${userInfo.email} has been successfully connected.` 
+          });
+          
+          return [...prev, newAccount];
+        });
+        
+        // Store tokens securely (in production, this would be server-side)
+        localStorage.setItem(`gmail_tokens_${userInfo.email}`, JSON.stringify({
+          accessToken,
+          refreshToken,
+          email: userInfo.email
+        }));
+        
+      } else {
+        throw new Error('Failed to get user info');
+      }
+    } catch (error) {
+      console.error('OAuth success handling error:', error);
+      toast({ 
+        title: 'Connection Error', 
+        description: 'Failed to complete Gmail connection. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsConnecting(false);
+    }
+  };
 
   const handleConnectGmail = () => {
-    // This would initiate OAuth flow for Gmail
-    toast({ title: 'Connecting Gmail...', description: 'Redirecting to Gmail for authorization.' });
-    // Simulate adding an account after a delay
-    setTimeout(() => {
-      const newAccountEmail = user?.email || `user${Date.now()}@gmail.com`;
-      setLinkedAccounts(prev => [...prev, { id: crypto.randomUUID(), provider: 'gmail', email: newAccountEmail }]);
-      toast({ title: 'Gmail Account Connected!', description: `${newAccountEmail} has been added.` });
-    }, 2000);
+    // Redirect to Gmail OAuth initiation
+    window.location.href = '/api/auth/gmail';
   };
 
   const handleRemoveAccount = (accountId: string) => {
@@ -56,19 +133,101 @@ export default function ConnectAccountPage() {
     toast({ title: 'Account Removed', variant: 'destructive' });
   };
 
-  const handleScanAccount = (accountId: string) => {
+  const handleScanAccount = async (accountId: string) => {
     // Find the account before updating state to avoid circular references
     const accountToScan = linkedAccounts.find(a => a.id === accountId);
     if (!accountToScan) return;
     
     setLinkedAccounts(prev => prev.map(acc => acc.id === accountId ? { ...acc, isScanning: true } : acc));
-    toast({ title: `Scanning ${accountToScan.email}...` });
+    toast({ title: `Scanning ${accountToScan.email}...`, description: 'Looking for subscription emails...' });
     
-    // Simulate scanning process
-    setTimeout(() => {
+    try {
+      // Try to get real Gmail tokens
+      const storedTokens = localStorage.getItem(`gmail_tokens_${accountToScan.email}`);
+      let scanResult;
+      
+      if (storedTokens) {
+        // Use real Gmail API
+        const tokens = JSON.parse(storedTokens);
+        const response = await fetch('/api/scan/gmail', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: accountToScan.email,
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken
+          })
+        });
+        
+        if (response.ok) {
+          scanResult = await response.json();
+        } else {
+          throw new Error('Gmail API scan failed');
+        }
+      } else {
+        // Fallback to mock scan
+        const response = await fetch('/api/scan/mock', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email: accountToScan.email })
+        });
+        
+        if (response.ok) {
+          scanResult = await response.json();
+        } else {
+          throw new Error('Mock scan failed');
+        }
+      }
+      
+      // Update state
       setLinkedAccounts(prev => prev.map(acc => acc.id === accountId ? { ...acc, isScanning: false, lastScan: new Date().toISOString() } : acc));
-      toast({ title: 'Scan Complete!', description: `Finished scanning ${accountToScan.email}.` });
-    }, 3000 + Math.random() * 2000);
+      
+      // Show results
+      if (scanResult.subscriptions && scanResult.subscriptions.length > 0) {
+        const foundList = scanResult.subscriptions.map((sub: any) => `${sub.name} (${sub.price}/${sub.cycle})`).join(', ');
+        toast({ 
+          title: 'Scan Complete!', 
+          description: `Found ${scanResult.subscriptions.length} subscription${scanResult.subscriptions.length > 1 ? 's' : ''}: ${foundList}. Check your dashboard to review.`,
+          duration: 6000
+        });
+        
+        // Send SMS notification if premium user
+        if (user?.isPremium && scanResult.subscriptions.length > 0) {
+          try {
+            await fetch('/api/sms/notify', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                email: accountToScan.email,
+                subscriptions: scanResult.subscriptions
+              })
+            });
+          } catch (smsError) {
+            console.error('SMS notification failed:', smsError);
+          }
+        }
+      } else {
+        toast({ 
+          title: 'Scan Complete!', 
+          description: `No new subscriptions found in ${accountToScan.email}.` 
+        });
+      }
+      
+    } catch (error) {
+      console.error('Scan error:', error);
+      setLinkedAccounts(prev => prev.map(acc => acc.id === accountId ? { ...acc, isScanning: false } : acc));
+      toast({ 
+        title: 'Scan Failed', 
+        description: 'There was an error scanning your Gmail account. Please try again.',
+        variant: 'destructive'
+      });
+    }
   };
 
   return (

@@ -133,6 +133,7 @@ export default function SubscriptionsListPage() {
 
     if (user) {
         async function loadSubscriptions() {
+          if (!user) return;
           setIsLoading(true);
           const subs = await getSubscriptions(user.uid);
           setSubscriptions(subs);

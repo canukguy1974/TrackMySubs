@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { Shield, Bell, CreditCard, LogOut, User, Mail, KeyRound } from 'lucide-react';
+import { Shield, Bell, CreditCard, LogOut, User, Mail, KeyRound, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { updateUser } from '@/app/actions/user';
@@ -93,6 +93,14 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-8">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/dashboard" className="flex items-center gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
+          </Link>
+        </Button>
+      </div>
       <h1 className="text-3xl font-bold font-headline tracking-tight">Settings</h1>
       
       <Card className="bg-gradient-to-br from-primary/10 to-accent/10">

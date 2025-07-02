@@ -4,7 +4,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle, XCircle, Zap, Star } from 'lucide-react';
+import { CheckCircle, XCircle, Zap, Star, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -15,21 +15,23 @@ import { useRouter } from 'next/navigation';
 const planFeatures = {
   free: [
     { text: '1 AI Email Scan', included: true },
+    { text: '1 Gmail Scan Per Day', included: true },
     { text: 'Manual Subscription Tracking', included: true },
     { text: 'Connect 1 Gmail Account', included: true },
     { text: 'Basic Reminders', included: true },
-    { text: 'Unlimited AI Scans', included: false },
+    { text: '20 Daily Gmail Scans', included: false },
     { text: 'Connect Multiple Gmail Accounts', included: false },
     { text: 'Advanced SMS Reminders', included: false },
     { text: 'Priority Support', included: false },
   ],
   premium: [
+    { text: '20 Daily Gmail Scans', included: true },
     { text: 'Unlimited AI Email Scans', included: true },
     { text: 'Manual Subscription Tracking', included: true },
     { text: 'Connect up to 5 Gmail Accounts', included: true },
     { text: 'Advanced SMS & Email Reminders', included: true },
-    { text: 'Subscription Categorization AI', included: true },
-    { text: 'Export Data', included: true },
+    { text: 'Daily Auto-Scan', included: true },
+    { text: 'Calendar View', included: true },
     { text: 'Priority Support', included: true },
   ],
 };
@@ -79,18 +81,52 @@ export default function BillingPage() {
   ];
 
 
-  const handleUpgrade = (planName: string) => {
-    // In a real app, this would redirect to a payment gateway like Stripe
-    // The server would generate a checkout session and redirect the user.
-    // Upon successful payment, a webhook would update the user's `isPremium` status in the database.
-    toast({
-      title: `Redirecting to payment for ${planName}...`,
-      description: 'This is a demo. In a real app, you would be sent to Stripe.',
-    });
+  const handleUpgrade = async (planName: string) => {
+    try {
+      toast({
+        title: `Redirecting to Stripe Checkout...`,
+        description: 'Please wait while we set up your payment.',
+      });
+      
+      // In production, this would call your Stripe API
+      // For now, we'll simulate the Stripe flow
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          planName,
+          userId: user.uid,
+        }),
+      });
+      
+      if (response.ok) {
+        const { url } = await response.json();
+        window.location.href = url;
+      } else {
+        throw new Error('Failed to create checkout session');
+      }
+    } catch (error) {
+      console.error('Error creating checkout session:', error);
+      toast({
+        title: 'Payment Setup Failed',
+        description: 'Please try again or contact support if the issue persists.',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
     <div className="space-y-8">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/dashboard" className="flex items-center gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
+          </Link>
+        </Button>
+      </div>
       <h1 className="text-3xl font-bold font-headline tracking-tight">Billing & Plans</h1>
       <p className="text-muted-foreground">
         Choose the SubScribe plan that best fits your needs. Manage your subscription and payment methods here.

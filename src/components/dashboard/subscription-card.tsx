@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from '@/components/ui/badge';
 import { CalendarDays, CreditCard, Edit3, Bell, BellOff, Trash2, ExternalLink, Info, AlertTriangle, CheckCircle, Package, Repeat } from 'lucide-react';
 import { getCategoryIcon } from '@/lib/placeholder-data';
+import { getServiceIcon } from '@/lib/service-icons';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,7 +30,13 @@ interface SubscriptionCardProps {
 }
 
 export default function SubscriptionCard({ subscription, onEdit, onDelete, onToggleNotification }: SubscriptionCardProps) {
+  // Safety checks to prevent infinite loops
+  if (!subscription || typeof subscription.serviceName !== 'string') {
+    return null;
+  }
+  
   const CategoryIconComponent = getCategoryIcon(subscription.category);
+  const ServiceIconComponent = getServiceIcon(subscription.serviceName);
   const [showAnnualized, setShowAnnualized] = useState(false);
 
   const [daysUntilNextPayment, setDaysUntilNextPayment] = useState<number | null>(null);
@@ -112,8 +119,8 @@ export default function SubscriptionCard({ subscription, onEdit, onDelete, onTog
       <CardHeader>
         <div className="flex justify-between items-start">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-muted rounded-full">
-              <CategoryIconComponent className="w-5 h-5" />
+            <div className="p-1 bg-muted rounded-lg">
+              <ServiceIconComponent className="w-6 h-6" />
             </div>
             <div>
               <CardTitle className="text-xl font-headline">{subscription.serviceName}</CardTitle>

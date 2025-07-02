@@ -49,8 +49,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setUser({
             uid: firebaseUser.uid,
             email: firebaseUser.email!,
-            name: firebaseUser.displayName,
-            avatarUrl: firebaseUser.photoURL,
+            name: firebaseUser.displayName || undefined,
+            avatarUrl: firebaseUser.photoURL || undefined,
             isPremium: false,
             freeScansUsed: 0,
             createdAt: new Date(),

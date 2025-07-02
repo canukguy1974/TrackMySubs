@@ -20,8 +20,8 @@ export async function getOrCreateUser(firebaseUser: FirebaseUser): Promise<UserP
     return {
       uid: firebaseUser.uid,
       email: firebaseUser.email!,
-      name: firebaseUser.displayName,
-      avatarUrl: firebaseUser.photoURL,
+      name: firebaseUser.displayName || undefined,
+      avatarUrl: firebaseUser.photoURL || undefined,
       isPremium: false,
       freeScansUsed: 0,
       createdAt: new Date(),
@@ -39,8 +39,8 @@ export async function getOrCreateUser(firebaseUser: FirebaseUser): Promise<UserP
   const newUser: UserProfile = {
     uid: firebaseUser.uid,
     email: firebaseUser.email!,
-    name: firebaseUser.displayName,
-    avatarUrl: firebaseUser.photoURL,
+    name: firebaseUser.displayName || undefined,
+    avatarUrl: firebaseUser.photoURL || undefined,
     isPremium: false,
     freeScansUsed: 0,
     createdAt: new Date(),
