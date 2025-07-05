@@ -50,3 +50,6 @@ trackmysubs-255b6-firebase-adminsdk-fbsvc-c857a1a769.json
 firebase-service-account.json
 encoded.txt
 *:Zone.Identifier
+
+# Additional environment files
+.env.production

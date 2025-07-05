@@ -86,7 +86,7 @@ export default function SubscriptionCard({ subscription, onEdit, onDelete, onTog
   };
 
   const displayPrice = () => {
-    if (subscription.price === 0) return 'Free';
+    if (subscription.price === 0 || subscription.price == null) return 'Free';
 
     let price = subscription.price;
     let period = subscription.renewalPeriod || 'cycle';
@@ -100,7 +100,7 @@ export default function SubscriptionCard({ subscription, onEdit, onDelete, onTog
         period = 'month';
       }
     }
-    return `${subscription.currency} ${price.toFixed(2)} / ${period}`;
+    const currency = subscription.currency || '$'; const formattedPrice = typeof price === 'number' ? price.toFixed(2) : '0.00'; return `${currency} ${formattedPrice} / ${period}`;
   };
 
   const canTogglePriceView = subscription.renewalPeriod === 'monthly' || subscription.renewalPeriod === 'yearly';
