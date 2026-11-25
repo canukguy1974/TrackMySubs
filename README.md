@@ -209,4 +209,4 @@ MIT License - see LICENSE file for details
 
 ## Support
 
-For questions or issues, please open a GitHub issue or contact [your-email@domain.com]
+For questions or issues, please open a GitHub issue or contact [hello@colinsai.com](mailto:hello@colinsai.com)
