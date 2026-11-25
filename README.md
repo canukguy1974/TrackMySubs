@@ -1,4 +1,4 @@
-# TrackMySUbs - Subscription Management App
+# TrackMySubs - Subscription Management App
 
 A comprehensive subscription tracking application built with Next.js, Firebase, Stripe, and Google APIs.
 
